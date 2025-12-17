@@ -31,9 +31,11 @@ export class SystemConfig {
     debug: boolean;
     /** 日志级别 */
     log_level: string;
+    /** 是否开启文件日志 */
+    fileLog: boolean;
 
     constructor(options?: any) {
-        const { requestLog, tmpDir, logDir, logWriteInterval, logFileExpires, tmpFileExpires, requestBody, debug, log_level } = options || {};
+        const { requestLog, tmpDir, logDir, logWriteInterval, logFileExpires, tmpFileExpires, requestBody, debug, log_level, fileLog } = options || {};
         this.requestLog = _.defaultTo(requestLog, false);
         this.tmpDir = _.defaultTo(tmpDir, './tmp');
         this.logDir = _.defaultTo(logDir, './logs');
@@ -55,6 +57,7 @@ export class SystemConfig {
         });
         this.debug = _.defaultTo(debug, true);
         this.log_level = _.defaultTo(log_level, 'info');
+        this.fileLog = _.defaultTo(fileLog, true);
     }
 
     get rootDirPath() {

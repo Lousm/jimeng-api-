@@ -44,7 +44,7 @@ export async function uploadImageBuffer(
 
     // 准备文件信息
     const fileSize = imageBuffer.byteLength;
-    const crc32 = util.calculateCRC32(imageBuffer);
+    const crc32 = util.calculateCRC32(imageBuffer as any);
     logger.info(`图片Buffer: 大小=${fileSize}字节, CRC32=${crc32}`);
 
     // 第二步：申请图片上传权限
@@ -123,8 +123,10 @@ export async function uploadImageBuffer(
     // 第三步：上传图片文件
     let uploadResponse;
     try {
-      uploadResponse = await fetch(uploadUrl, {
-        method: 'POST',
+      // 使用 axios 替代 fetch
+      const axiosModule = await import("axios");
+      const axios = axiosModule.default as any; // Cast to any to avoid type issues with downgraded version
+      uploadResponse = await axios.post(uploadUrl, imageBuffer, {
         headers: {
           'Accept': '*/*',
           'Accept-Language': 'zh-CN,zh;q=0.9',
@@ -140,16 +142,19 @@ export async function uploadImageBuffer(
           'Sec-Fetch-Site': 'cross-site',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
         },
-        body: imageBuffer,
+        responseType: 'text', // 获取文本响应以保持一致性
+        validateStatus: () => true, // 允许所有状态码，以便后续手动检查
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity
       });
-    } catch (fetchError: any) {
-      logger.error(`图片文件上传fetch请求失败，目标URL: ${uploadUrl}`);
-      logger.error(`错误详情: ${fetchError.message}`);
-      throw new Error(`图片上传网络请求失败 (${uploadHost}): ${fetchError.message}. 请检查网络连接`);
+    } catch (axiosError: any) {
+      logger.error(`图片文件上传axios请求失败，目标URL: ${uploadUrl}`);
+      logger.error(`错误详情: ${axiosError.message}`);
+      throw new Error(`图片上传网络请求失败 (${uploadHost}): ${axiosError.message}. 请检查网络连接`);
     }
 
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
+    if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
+      const errorText = typeof uploadResponse.data === 'string' ? uploadResponse.data : JSON.stringify(uploadResponse.data);
       throw new Error(`图片上传失败: ${uploadResponse.status} - ${errorText}`);
     }
 

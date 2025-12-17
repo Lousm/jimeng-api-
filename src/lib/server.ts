@@ -26,7 +26,7 @@ class Server {
         this.router = new KoaRouter({ prefix: config.service.urlPrefix });
         // 前置处理异常拦截
         this.app.use(async (ctx: any, next: Function) => {
-            if(ctx.request.type === "application/xml" || ctx.request.type === "application/ssml+xml")
+            if (ctx.request.type === "application/xml" || ctx.request.type === "application/ssml+xml")
                 ctx.req.headers["content-type"] = "text/xml";
             try { await next() }
             catch (err) {
@@ -114,7 +114,7 @@ class Server {
                 await koaBody(Object.assign(_.clone(config.system.requestBody), {
                     multipart: true, // 开启multipart文件上传
                     formidable: {
-                        maxFileSize: 10 * 1024 * 1024, // 限制最大10MB
+                        maxFileSize: 100 * 1024 * 1024, // 限制最大100MB
                     },
                     enableTypes: ['json', 'form', 'text', 'xml'] // 确保form类型被启用
                 }))(ctx, next);
@@ -139,7 +139,7 @@ class Server {
         routes.forEach((route: any) => {
             const prefix = route.prefix || "";
             for (let method in route) {
-                if(method === "prefix") continue;
+                if (method === "prefix") continue;
                 if (!_.isObject(route[method])) {
                     logger.warn(`Router ${prefix} ${method} invalid`);
                     continue;
@@ -147,7 +147,7 @@ class Server {
                 for (let uri in route[method]) {
                     this.router[method](`${prefix}${uri}`, async ctx => {
                         const { request, response } = await this.#requestProcessing(ctx, route[method][uri]);
-                        if(response != null && config.system.requestLog) {
+                        if (response != null && config.system.requestLog) {
                             if (ctx.request.url.endsWith('/ping')) {
                                 logger.debug(`<- ${request.method} ${request.url} ${response.time - request.time}ms`);
                             } else {
@@ -170,7 +170,7 @@ class Server {
             const failureBody = new FailureBody(new Error(message));
             const response = new Response(failureBody);
             response.injectTo(ctx);
-            if(config.system.requestLog)
+            if (config.system.requestLog)
                 logger.info(`<- ${request.method} ${request.url} ${response.time - request.time}ms`);
         });
     }
@@ -185,50 +185,50 @@ class Server {
         return new Promise(resolve => {
             const request = new Request(ctx);
             try {
-                if(config.system.requestLog) {
+                if (config.system.requestLog) {
                     if (request.url === '/ping') {
                         logger.debug(`-> ${request.method} ${request.url}`);
                     } else {
                         logger.info(`-> ${request.method} ${request.url}`);
                     }
                 }
-                    routeFn(request)
-                .then(response => {
-                    try {
-                        if(!Response.isInstance(response)) {
-                            const _response = new Response(response);
-                            _response.injectTo(ctx);
-                            return resolve({ request, response: _response });
+                routeFn(request)
+                    .then(response => {
+                        try {
+                            if (!Response.isInstance(response)) {
+                                const _response = new Response(response);
+                                _response.injectTo(ctx);
+                                return resolve({ request, response: _response });
+                            }
+                            response.injectTo(ctx);
+                            resolve({ request, response });
                         }
-                        response.injectTo(ctx);
-                        resolve({ request, response });
-                    }
-                    catch(err) {
-                        logger.error(err);
-                        const failureBody = new FailureBody(err);
-                        const response = new Response(failureBody);
-                        response.injectTo(ctx);
-                        resolve({ request, response });
-                    }
-                })
-                .catch(err => {
-                    try {
-                        logger.error(err);
-                        const failureBody = new FailureBody(err);
-                        const response = new Response(failureBody);
-                        response.injectTo(ctx);
-                        resolve({ request, response });
-                    }
-                    catch(err) {
-                        logger.error(err);
-                        const failureBody = new FailureBody(err);
-                        const response = new Response(failureBody);
-                        response.injectTo(ctx);
-                        resolve({ request, response });
-                    }
-                });
+                        catch (err) {
+                            logger.error(err);
+                            const failureBody = new FailureBody(err);
+                            const response = new Response(failureBody);
+                            response.injectTo(ctx);
+                            resolve({ request, response });
+                        }
+                    })
+                    .catch(err => {
+                        try {
+                            logger.error(err);
+                            const failureBody = new FailureBody(err);
+                            const response = new Response(failureBody);
+                            response.injectTo(ctx);
+                            resolve({ request, response });
+                        }
+                        catch (err) {
+                            logger.error(err);
+                            const failureBody = new FailureBody(err);
+                            const response = new Response(failureBody);
+                            response.injectTo(ctx);
+                            resolve({ request, response });
+                        }
+                    });
             }
-            catch(err) {
+            catch (err) {
                 logger.error(err);
                 const failureBody = new FailureBody(err);
                 const response = new Response(failureBody);
@@ -246,16 +246,16 @@ class Server {
         const port = config.service.port;
         await Promise.all([
             new Promise((resolve, reject) => {
-                if(host === "0.0.0.0" || host === "localhost" || host === "127.0.0.1")
+                if (host === "0.0.0.0" || host === "localhost" || host === "127.0.0.1")
                     return resolve(null);
                 this.app.listen(port, "localhost", err => {
-                    if(err) return reject(err);
+                    if (err) return reject(err);
                     resolve(null);
                 });
             }),
             new Promise((resolve, reject) => {
                 this.app.listen(port, host, err => {
-                    if(err) return reject(err);
+                    if (err) return reject(err);
                     resolve(null);
                 });
             })

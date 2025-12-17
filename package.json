@@ -12,13 +12,23 @@
   "files": [
     "dist/"
   ],
+  "bin": "dist-exe-build/index.cjs",
   "scripts": {
     "dev": "tsup src/index.ts --format cjs,esm --sourcemap --dts --watch --onSuccess \"node --enable-source-maps --no-node-snapshot dist/index.js\"",
     "start": "node --enable-source-maps --no-node-snapshot dist/index.js",
     "build": "tsup src/index.ts --format cjs,esm --sourcemap --dts --clean",
+    "build:exe": "npm run build && ncc build dist/index.cjs -o dist-exe-build && javascript-obfuscator dist-exe-build/index.cjs --output dist-exe-build/index.cjs && pkg . --targets node18-win-x64 --out-path dist-exe && node scripts/hide-console.cjs dist-exe/jimeng-api.exe",
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
     "type-check": "tsc --noEmit"
+  },
+  "pkg": {
+    "scripts": "dist-exe-build/index.cjs",
+    "assets": [
+      "configs/**/*",
+      "!**/*.md"
+    ],
+    "outputPath": "dist-exe"
   },
   "author": "Jimeng API Team",
   "license": "GPL-3.0",
@@ -39,7 +49,7 @@
   },
   "homepage": "https://github.com/your-repo/jimeng-api#readme",
   "dependencies": {
-    "axios": "^1.6.7",
+    "axios": "^0.27.2",
     "colors": "^1.4.0",
     "crc-32": "^1.2.2",
     "cron": "^3.1.6",
@@ -53,7 +63,7 @@
     "koa-router": "^12.0.1",
     "koa2-cors": "^2.0.6",
     "lodash": "^4.17.21",
-    "mime": "^4.0.1",
+    "mime": "^3.0.0",
     "minimist": "^1.2.8",
     "randomstring": "^1.3.0",
     "semver": "^7.7.2",
@@ -63,6 +73,9 @@
   "devDependencies": {
     "@types/lodash": "^4.14.202",
     "@types/mime": "^3.0.4",
+    "@vercel/ncc": "^0.38.1",
+    "javascript-obfuscator": "^4.2.1",
+    "pkg": "^5.8.1",
     "tsup": "^8.0.2",
     "typescript": "^5.3.3"
   }

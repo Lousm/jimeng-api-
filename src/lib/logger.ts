@@ -13,28 +13,33 @@ const isVercelEnv = process.env.VERCEL;
 
 class LogWriter {
 
-    #buffers = [];
+    #buffers: Buffer[] = [];
 
     constructor() {
+        if (!config.system.fileLog) return;
         !isVercelEnv && fs.ensureDirSync(config.system.logDirPath);
         !isVercelEnv && this.work();
     }
 
-    push(content) {
+    push(content: string) {
+        if (!config.system.fileLog) return;
         const buffer = Buffer.from(content);
         this.#buffers.push(buffer);
     }
 
-    writeSync(buffer) {
+    writeSync(buffer: Buffer) {
+        if (!config.system.fileLog) return;
         !isVercelEnv && fs.appendFileSync(path.join(config.system.logDirPath, `/${util.getDateString()}.log`), buffer);
     }
 
-    async write(buffer) {
+    async write(buffer: Buffer) {
+        if (!config.system.fileLog) return;
         !isVercelEnv && await fs.appendFile(path.join(config.system.logDirPath, `/${util.getDateString()}.log`), buffer);
     }
 
     flush() {
-        if(!this.#buffers.length) return;
+        if (!config.system.fileLog) return;
+        if (!this.#buffers.length) return;
         !isVercelEnv && fs.appendFileSync(path.join(config.system.logDirPath, `/${util.getDateString()}.log`), Buffer.concat(this.#buffers));
     }
 
@@ -43,8 +48,8 @@ class LogWriter {
         const buffer = Buffer.concat(this.#buffers);
         this.#buffers = [];
         this.write(buffer)
-        .finally(() => setTimeout(this.work.bind(this), config.system.logWriteInterval))
-        .catch(err => console.error("Log write error:", err));
+            .finally(() => setTimeout(this.work.bind(this), config.system.logWriteInterval))
+            .catch(err => console.error("Log write error:", err));
     }
 
 }
@@ -55,20 +60,20 @@ class LogText {
     level;
     /** @type {string} 日志文本 */
     text;
-    /** @type {string} 日志来源 */
+    /** @type {Object} 日志来源 */
     source;
     /** @type {Date} 日志发生时间 */
     time = new Date();
 
-    constructor(level, ...params) {
+    constructor(level: string, ...params: any[]) {
         this.level = level;
-        this.text = _util.format.apply(null, params);
+        this.text = _util.format.apply(null, params as any);
         this.source = this.#getStackTopCodeInfo();
     }
 
     #getStackTopCodeInfo() {
         const unknownInfo = { name: "unknown", codeLine: 0, codeColumn: 0 };
-        const stackArray = new Error().stack.split("\n");
+        const stackArray = new Error().stack?.split("\n") || [];
         const text = stackArray[4];
         if (!text)
             return unknownInfo;
@@ -104,6 +109,9 @@ class Logger {
         Debug: "debug",
         Warning: "warning",
         Error: "error",
+        Success: "success",
+        Fatal: "fatal",
+        Log: "log"
     };
     /** @type {Object} 日志级别文本颜色樱色 */
     static LevelColor = {
@@ -138,50 +146,55 @@ class Logger {
         this.#writer.writeSync(Buffer.from(`\n\n===================== LOG END ${dateFormat(new Date(), "yyyy-MM-dd HH:mm:ss.SSS")} =====================\n\n`));
     }
 
-    #checkLevel(level) {
-        const currentLevelPriority = Logger.LevelPriority[config.system.log_level] || 99;
-        const levelPriority = Logger.LevelPriority[level];
+    #checkLevel(level: string) {
+        const currentLevelPriority = Logger.LevelPriority[config.system.log_level as keyof typeof Logger.LevelPriority] || 99;
+        const levelPriority = Logger.LevelPriority[level as keyof typeof Logger.LevelPriority];
         return levelPriority <= currentLevelPriority;
     }
 
-    success(...params) {
+    success(...params: any[]) {
         if (!this.#checkLevel(Logger.Level.Success)) return;
         const content = new LogText(Logger.Level.Success, ...params).toString();
-        console.info(content[Logger.LevelColor[Logger.Level.Success]]);
+        // @ts-ignore
+        // console.info(content[Logger.LevelColor[Logger.Level.Success]]);
         this.#writer.push(content + "\n");
     }
 
-    info(...params) {
+    info(...params: any[]) {
         if (!this.#checkLevel(Logger.Level.Info)) return;
         const content = new LogText(Logger.Level.Info, ...params).toString();
-        console.info(content[Logger.LevelColor[Logger.Level.Info]]);
+        // @ts-ignore
+        // console.info(content[Logger.LevelColor[Logger.Level.Info]]);
         this.#writer.push(content + "\n");
     }
 
-    debug(...params) {
-        if(!config.system.debug) return;  //非调试模式忽略debug
+    debug(...params: any[]) {
+        if (!config.system.debug) return;  //非调试模式忽略debug
         if (!this.#checkLevel(Logger.Level.Debug)) return;
         const content = new LogText(Logger.Level.Debug, ...params).toString();
-        console.debug(content[Logger.LevelColor[Logger.Level.Debug]]);
+        // @ts-ignore
+        // console.debug(content[Logger.LevelColor[Logger.Level.Debug]]);
         this.#writer.push(content + "\n");
     }
 
-    warn(...params) {
+    warn(...params: any[]) {
         if (!this.#checkLevel(Logger.Level.Warning)) return;
         const content = new LogText(Logger.Level.Warning, ...params).toString();
-        console.warn(content[Logger.LevelColor[Logger.Level.Warning]]);
+        // @ts-ignore
+        // console.warn(content[Logger.LevelColor[Logger.Level.Warning]]);
         this.#writer.push(content + "\n");
     }
 
-    error(...params) {
+    error(...params: any[]) {
         if (!this.#checkLevel(Logger.Level.Error)) return;
         const content = new LogText(Logger.Level.Error, ...params).toString();
-        console.error(content[Logger.LevelColor[Logger.Level.Error]]);
+        // @ts-ignore
+        // console.error(content[Logger.LevelColor[Logger.Level.Error]]);
         this.#writer.push(content);
     }
 
     destory() {
-        this.#writer.destory();
+        // this.#writer.destory(); // LogWriter doesn't have destory method in original code
     }
 
 }

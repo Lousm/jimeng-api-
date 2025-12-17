@@ -37,8 +37,18 @@ class Environment {
 
 }
 
+let pkg = { version: '1.0.0', name: 'jimeng-api' };
+try {
+    const pkgPath = path.join(path.resolve(), "package.json");
+    if (fs.existsSync(pkgPath)) {
+        pkg = JSON.parse(fs.readFileSync(pkgPath).toString());
+    }
+} catch (e) {
+    // ignore
+}
+
 export default new Environment({
     cmdArgs,
     envVars,
-    package: JSON.parse(fs.readFileSync(path.join(path.resolve(), "package.json")).toString())
+    package: pkg
 });
